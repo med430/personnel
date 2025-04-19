@@ -16,7 +16,7 @@ public class Employee {
     private double salary;
 
     @OneToMany
-    @Valid
+
     private List<Skill> skills = new ArrayList<Skill>();
 
     public Employee() {}
