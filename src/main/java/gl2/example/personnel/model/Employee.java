@@ -1,8 +1,9 @@
 package gl2.example.personnel.model;
 
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.validation.annotation.*;
 import java.util.*;
 
 @Entity
@@ -15,8 +16,8 @@ public class Employee {
     private String position;
     private double salary;
 
-    @OneToMany
-    @Valid
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Skill> skills = new ArrayList<Skill>();
 
     public Employee() {}
@@ -25,6 +26,11 @@ public class Employee {
         this.name = name;
         this.position = position;
         this.salary = salary;
+    }
+
+    public void addSkill(Skill skill) {
+        skill.setEmployee(this);
+        this.skills.add(skill);
     }
 
     // Getters and Setters
@@ -58,5 +64,12 @@ public class Employee {
 
     public void setSalary(double salary) {
         this.salary = salary;
+    }
+
+    public List<Skill> getSkills() {
+        return skills;
+    }
+    public void setSkills(List<Skill> skills) {
+        this.skills = skills;
     }
 }
