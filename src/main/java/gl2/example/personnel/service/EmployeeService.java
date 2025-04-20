@@ -126,6 +126,14 @@ public class EmployeeService {
         return new SkillDTO(skill);
     }
 
+    public SkillDTO deleteEmployeeSkill(Long employeeId, Long skillId) {
+        Employee employee = employeeRepository.findById(employeeId).orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
+        Skill skill = employee.getSkills().stream().filter(s -> s.getId().equals(skillId)).findFirst().orElseThrow(() -> new ResourceNotFoundException("Skill", "id", skillId));
+        employee.getSkills().remove(skill);
+        employeeRepository.save(employee);
+        return new SkillDTO(skill);
+    }
+
     public SkillDTO getSkillById(Long employeeId, Long skillId) {
         Optional<Employee> employee = employeeRepository.findById(employeeId);
         Optional<Skill> skill = Optional.ofNullable(employee.get().getSkills().stream().filter(s -> s.getId().equals(skillId)).findFirst().orElse(null));
