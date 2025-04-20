@@ -1,6 +1,7 @@
 package gl2.example.personnel.controller;
 
 import gl2.example.personnel.dto.EmployeeDTO;
+import gl2.example.personnel.dto.SkillDTO;
 import gl2.example.personnel.dto.SkillRequest;
 import gl2.example.personnel.model.Employee;
 import gl2.example.personnel.service.EmployeeService;
@@ -19,6 +20,21 @@ public class EmployeeSkillController {
     @Autowired
     private EmployeeService employeeService;
 
+    @GetMapping
+    public ResponseEntity<List<SkillDTO>> getSkills(
+            @PathVariable Long employeeId
+    ) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(employeeId).getSkills());
+    }
+
+    @GetMapping("/{skillId}")
+    public ResponseEntity<SkillDTO> getSkill(
+            @PathVariable Long employeeId,
+            @PathVariable Long skillId
+    ) {
+        return ResponseEntity.ok(employeeService.getSkillById(employeeId, skillId));
+    }
+
     @PostMapping
     public ResponseEntity<EmployeeDTO> addSkill(
             @PathVariable Long employeeId,
@@ -28,10 +44,25 @@ public class EmployeeSkillController {
     }
 
     @PutMapping
-    public ResponseEntity<EmployeeDTO> updateSkill(
+    public ResponseEntity<EmployeeDTO> updateAllSkills(
             @PathVariable Long employeeId,
-            @Valid @RequestBody SkillRequest request
-    ) {
-        EmployeeDTO response = employeeService.getEmployeeById(employeeId).getSkills();
+            @Valid @RequestBody List<SkillRequest> skillRequests) {
+
+        EmployeeDTO updatedEmployee = employeeService.updateEmployeeSkills(employeeId, skillRequests);
+        if(updatedEmployee!=null) {
+            return ResponseEntity.ok(updatedEmployee);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{skillId}")
+    public ResponseEntity<SkillDTO> updateSkill(
+            @PathVariable Long employeeId,
+            @PathVariable Long skillId,
+            @Valid @RequestBody SkillRequest skillRequest) {
+
+        SkillDTO updatedSkill = employeeService.updateSkill(employeeId, skillId, skillRequest);
+        return ResponseEntity.ok(updatedSkill);
     }
 }

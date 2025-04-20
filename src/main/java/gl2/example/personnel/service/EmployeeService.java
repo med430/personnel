@@ -3,6 +3,7 @@ package gl2.example.personnel.service;
 
 import gl2.example.personnel.dto.EmployeeDTO;
 import gl2.example.personnel.dto.EmployeeRequest;
+import gl2.example.personnel.dto.SkillDTO;
 import gl2.example.personnel.dto.SkillRequest;
 import gl2.example.personnel.exception.ResourceNotFoundException;
 import gl2.example.personnel.model.Employee;
@@ -14,7 +15,9 @@ import org.springframework.boot.context.config.ConfigDataResourceNotFoundExcepti
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +52,84 @@ public class EmployeeService {
         employee.addSkill(skill);
 
         return new EmployeeDTO(employeeRepository.save(employee));
+    }
+
+    @Transactional
+    public EmployeeDTO updateEmployee(Long id, EmployeeRequest request) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
+
+        // Mise à jour des champs
+        employee.setName(request.getName());
+        employee.setPosition(request.getPosition());
+        employee.setSalary(request.getSalary());
+
+        // Mise à jour des compétences
+        updateEmployeeSkills(employee, request.getSkills());
+
+        return new EmployeeDTO(employeeRepository.save(employee));
+    }
+
+    private void updateEmployeeSkills(Employee employee, List<SkillRequest> skillRequests) {
+        // Créer un Map pour un accès plus efficace
+        Map<String, SkillRequest> requestMap = skillRequests.stream()
+                .collect(Collectors.toMap(SkillRequest::getName, Function.identity()));
+
+        // Supprimer les compétences absentes du request
+        employee.getSkills().removeIf(skill -> !requestMap.containsKey(skill.getName()));
+
+        // Mettre à jour/ajouter les compétences
+        requestMap.forEach((name, skillRequest) -> {
+            Optional<Skill> existingSkill = employee.getSkills().stream()
+                    .filter(s -> s.getName().equals(name))
+                    .findFirst();
+
+            if (existingSkill.isPresent()) {
+                // Mise à jour de la compétence existante
+                Skill skill = existingSkill.get();
+                skill.setLevel(skillRequest.getLevel());
+            } else {
+                // Ajout d'une nouvelle compétence
+                Skill newSkill = new Skill();
+                newSkill.setName(name);
+                newSkill.setLevel(skillRequest.getLevel());
+                employee.addSkill(newSkill);
+            }
+        });
+    }
+
+    public EmployeeDTO updateEmployeeSkills(Long employeeId, List<SkillRequest> skillRequests) {
+        Optional<Employee> employee = employeeRepository.findById(employeeId);
+        if(employee.isPresent()) {
+            this.updateEmployeeSkills(employee.get(), skillRequests);
+            return new EmployeeDTO(employeeRepository.save(employee.get()));
+        }
+        return null;
+    }
+
+    @Transactional
+    public SkillDTO updateSkill(Long employeeId, Long skillId, SkillRequest request) {
+        // Vérifier que l'employé existe
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
+
+        // Trouver la compétence spécifique
+        Skill skill = employee.getSkills().stream()
+                .filter(s -> s.getId().equals(skillId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Skill", "id", skillId));
+
+        // Mise à jour
+        skill.setName(request.getName());
+        skill.setLevel(request.getLevel());
+
+        return new SkillDTO(skill);
+    }
+
+    public SkillDTO getSkillById(Long employeeId, Long skillId) {
+        Optional<Employee> employee = employeeRepository.findById(employeeId);
+        Optional<Skill> skill = Optional.ofNullable(employee.get().getSkills().stream().filter(s -> s.getId().equals(skillId)).findFirst().orElse(null));
+        return new SkillDTO(skill.get());
     }
 
     @Transactional
